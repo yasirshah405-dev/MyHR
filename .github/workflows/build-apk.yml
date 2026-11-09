@@ -47,7 +47,11 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US"
           fi
           if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+            # GitHub secrets can contain line wrapping when copied from a shell.
+            # Remove whitespace before decoding so the generated APK always gets
+            # a valid Firebase configuration file.
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | tr -d '\r\n \t' | base64 --decode > android/app/google-services.json
+            test -s android/app/google-services.json
           fi
 
       - name: Sync Android version from app.json
