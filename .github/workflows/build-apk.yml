@@ -1,0 +1,89 @@
+name: Build and publish My HR APK
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Prepare Android signing and optional Firebase config
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          if [ ! -f android/app/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore android/app/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+          fi
+
+      - name: Sync Android version from app.json
+        shell: bash
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const version = require('./app.json').expo.version;
+          const code = 1000 + Number(process.env.GITHUB_RUN_NUMBER || 1);
+          const path = 'android/app/build.gradle';
+          let text = fs.readFileSync(path, 'utf8');
+          text = text.replace(/versionCode\s+\d+/, `versionCode ${code}`);
+          text = text.replace(/versionName\s+"[^"]+"/, `versionName "${version}"`);
+          fs.writeFileSync(path, text);
+          console.log(`Building My HR ${version} (versionCode ${code})`);
+          NODE
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Publish release APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          TAG="v${VERSION}"
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk release/my-hr.apk
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/my-hr.apk --clobber
+          else
+            gh release create "$TAG" release/my-hr.apk --title "My HR ${VERSION}" --generate-notes
+          fi

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <g fill="#fff">
+    <!-- My HR's tree mark, simplified for Android's monochrome notification slot. -->
+    <ellipse cx="48" cy="13" rx="5" ry="10" transform="rotate(-28 48 13)"/>
+    <ellipse cx="34" cy="19" rx="5" ry="10" transform="rotate(-52 34 19)"/>
+    <ellipse cx="62" cy="19" rx="5" ry="10" transform="rotate(52 62 19)"/>
+    <ellipse cx="24" cy="33" rx="5" ry="10" transform="rotate(-68 24 33)"/>
+    <ellipse cx="38" cy="32" rx="5" ry="10" transform="rotate(-28 38 32)"/>
+    <ellipse cx="58" cy="32" rx="5" ry="10" transform="rotate(28 58 32)"/>
+    <ellipse cx="72" cy="33" rx="5" ry="10" transform="rotate(68 72 33)"/>
+    <ellipse cx="31" cy="45" rx="5" ry="10" transform="rotate(-62 31 45)"/>
+    <ellipse cx="48" cy="43" rx="5" ry="11"/>
+    <ellipse cx="65" cy="45" rx="5" ry="10" transform="rotate(62 65 45)"/>
+    <path d="M43 54h10l5 16H38z"/>
+    <path d="M48 66 31 88h34z"/>
+    <text x="48" y="95" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="700">MY HR</text>
+  </g>
+</svg>

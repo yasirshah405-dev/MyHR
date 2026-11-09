@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "My HR by Fruitmaster",
+    "slug": "fruitmaster-employee",
+    "version": "1.0.36",
+    "newArchEnabled": false,
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#eef7f2"
+    },
+    "userInterfaceStyle": "light",
+    "scheme": "fruitmasteremployee",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fruitmaster.employee",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ],
+        "NSLocationWhenInUseUsageDescription": "My HR uses your location to record attendance and share your live work location with your employer.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "My HR uses your location in the background during an active work session so your employer can see your live work location.",
+        "NSCameraUsageDescription": "My HR uses the camera for attendance check-in and check-out photos."
+      }
+    },
+    "android": {
+      "package": "com.fruitmaster.employee",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "backgroundColor": "#ffffff"
+      },
+      "versionCode": 27
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#032e42",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#032e42",
+      "barStyle": "light-content",
+      "enforceContrast": false
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0b6b3a",
+          "defaultChannel": "attendance"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "My HR uses your location during an active work session, including when the app is in the background, so your employer can see your live work location."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "58cbe15f-0737-4293-a4d8-aa50428175fe"
+      }
+    }
+  }
+}
