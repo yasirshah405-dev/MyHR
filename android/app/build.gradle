@@ -116,10 +116,10 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Use the original EAS signing key when CI provides it so Android
-            // can update the installed production app in place. Local builds
-            // fall back to the debug key when the EAS keystore is absent.
-            signingConfig file('eas-release.keystore').exists() ? signingConfigs.release : signingConfigs.debug
+            // Production releases must use the permanent EAS signing key.
+            // Using the debug key would make Android reject updates as a
+            // package conflict with the installed production app.
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

@@ -39,17 +39,21 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
           ANDROID_EAS_KEYSTORE_B64: ${{ secrets.ANDROID_EAS_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_EAS_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_EAS_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_EAS_KEY_PASSWORD }}
         run: |
-          if [ -n "$ANDROID_EAS_KEYSTORE_B64" ]; then
-            printf '%s' "$ANDROID_EAS_KEYSTORE_B64" | tr -d '\r\n \t' | base64 --decode > android/app/eas-release.keystore
-            test -s android/app/eas-release.keystore
-          elif [ ! -f android/app/debug.keystore ]; then
-            keytool -genkeypair -v \
-              -keystore android/app/debug.keystore \
-              -storepass android -alias androiddebugkey -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
+          set -euo pipefail
+          # Production APKs must always use the same release key. Falling back
+          # to the debug key makes Android reject updates as a package conflict.
+          for required in ANDROID_EAS_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!required:-}" ]; then
+              echo "::error::Missing GitHub secret: $required"
+              exit 1
+            fi
+          done
+          printf '%s' "$ANDROID_EAS_KEYSTORE_B64" | tr -d '\r\n \t' | base64 --decode > android/app/eas-release.keystore
+          test -s android/app/eas-release.keystore
           if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
             # GitHub secrets can contain line wrapping when copied from a shell.
             # Remove whitespace before decoding so the generated APK always gets
