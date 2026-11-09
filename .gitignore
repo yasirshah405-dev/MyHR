@@ -10,7 +10,10 @@ android/build/
 android/app/build/
 android/local.properties
 android/app/debug.keystore
+android/app/eas-release.keystore
 android/app/google-services.json
+credentials/
+credentials.json
 *.log
 *.idsig
 .eas-build-*.json
