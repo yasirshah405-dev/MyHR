@@ -189,8 +189,25 @@ dependencies {
 }
 
 // Firebase configuration is injected by CI when the optional
-// GOOGLE_SERVICES_JSON_B64 secret is configured. The app can still build
-// without it for non-Firebase testing.
-if (file('google-services.json').exists()) {
+// GOOGLE_SERVICES_JSON_B64 secret is configured. Only apply the plugin when
+// that file contains a client for this exact applicationId. This keeps the
+// separate v2 package installable while it uses the same web/location stack;
+// native push registration remains optional until a Firebase v2 client is
+// added.
+def googleServicesFile = file('google-services.json')
+def googleServicesHasMatchingClient = false
+if (googleServicesFile.exists()) {
+    try {
+        def googleServices = new groovy.json.JsonSlurper().parseText(googleServicesFile.text)
+        googleServicesHasMatchingClient = (googleServices.client ?: []).any { client ->
+            client?.client_info?.android_client_info?.package_name == android.defaultConfig.applicationId
+        }
+    } catch (Exception ignored) {
+        googleServicesHasMatchingClient = false
+    }
+}
+if (googleServicesHasMatchingClient) {
     apply plugin: 'com.google.gms.google-services'
+} else if (googleServicesFile.exists()) {
+    println "Skipping google-services.json: no Firebase client for ${android.defaultConfig.applicationId}"
 }
