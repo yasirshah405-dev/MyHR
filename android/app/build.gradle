@@ -89,11 +89,11 @@ android {
 
     namespace 'com.fruitmaster.employee'
     defaultConfig {
-        applicationId 'com.fruitmaster.employee'
+        applicationId 'com.fruitmaster.employee.v2'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 42
-        versionName "1.0.42"
+        versionCode 43
+        versionName "1.0.43"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
