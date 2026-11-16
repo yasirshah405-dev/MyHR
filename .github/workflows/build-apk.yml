@@ -54,7 +54,9 @@ jobs:
           done
           printf '%s' "$ANDROID_EAS_KEYSTORE_B64" | tr -d '\r\n \t' | base64 --decode > android/app/eas-release.keystore
           test -s android/app/eas-release.keystore
-          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+          if [ -s android/app/google-services.json ]; then
+            echo "Using the checked-in Firebase client configuration for com.fruitmaster.employee.v2"
+          elif [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
             # GitHub secrets can contain line wrapping when copied from a shell.
             # Remove whitespace before decoding so the generated APK always gets
             # a valid Firebase configuration file.
