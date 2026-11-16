@@ -9,7 +9,7 @@ const employeeAppUrl = process.env.EXPO_PUBLIC_EMPLOYEE_APP_URL || 'https://myhr
 const backendUrl = employeeAppUrl.split('/?')[0].replace(/\/$/, '');
 const CLOUDFLARE_MODE = String(process.env.EXPO_PUBLIC_BACKEND_MODE || '').toLowerCase() === 'cloudflare' || /workers\.dev/i.test(employeeAppUrl);
 const LOCATION_CHANNEL_ID = 'com.fruitmaster.employee:fruitmaster-background-location-v2';
-const APP_VERSION = '1.0.36';
+const APP_VERSION = '1.0.42';
 const APK_URL = 'https://github.com/yasirshah405-dev/MyHR/releases/latest/download/my-hr.apk';
 
 // Load optional native modules only after the WebView has rendered. This keeps
@@ -81,7 +81,11 @@ async function registerNativePush(accessToken) {
   try {
     tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
   } catch (error) {
-    if (/FirebaseApp|FCM|google-services/i.test(String(error && error.message || error))) {
+    const tokenError = String(error && error.message || error);
+    if (/SERVICE_NOT_AVAILABLE/i.test(tokenError)) {
+      throw permissionError('Push notification service is temporarily unavailable. Live location can continue; please retry notifications later.', 'notifications-service-unavailable');
+    }
+    if (/FirebaseApp|FCM|google-services/i.test(tokenError)) {
       throw permissionError('Android push notifications are not configured in this build. HR must add the Firebase Android configuration and rebuild the app.', 'firebase-config');
     }
     throw error;
@@ -313,15 +317,28 @@ export default function App() {
   const retryNativeSetup = useCallback(async () => {
     const session = nativeSessionRef.current;
     if (!session) return;
+    let notificationError = null;
+    let locationError = null;
     try {
       await registerNativePush(session.access_token);
+    } catch (error) {
+      notificationError = error;
+    }
+    try {
       if (nativeLocationActiveRef.current) await enableTracking(session.user && session.user.id || 'signed-in-user', session.access_token);
       else { await stopBackgroundTracking(); setTracking(false); }
+    } catch (error) {
+      locationError = error;
+    }
+    if (locationError) {
+      setPermissionIssue({ kind: 'location', code: locationError.code || 'location', text: locationError.message || 'Location permission could not be enabled.' });
+      setMessage(locationError.message || 'Location permission could not be enabled.');
+    } else if (notificationError) {
+      setPermissionIssue({ kind: 'notifications', code: notificationError.code || 'notifications', text: notificationError.message || 'Notifications could not be enabled.' });
+      setMessage(nativeLocationActiveRef.current ? 'Live location is active. Push notifications are temporarily unavailable.' : (notificationError.message || 'Push notifications are temporarily unavailable.'));
+    } else {
       setPermissionIssue(null);
       setMessage(nativeLocationActiveRef.current ? 'Notifications and live location are active.' : 'Notifications are active. Live location starts after employee sign-in.');
-    } catch (error) {
-      setPermissionIssue({ kind: error.code === 'notifications-permission' ? 'notifications' : 'location', code: error.code || 'setup', text: error.message || 'Permission could not be enabled.' });
-      setMessage(error.message || 'Permission could not be enabled.');
     }
   }, [enableTracking]);
 
@@ -429,15 +446,36 @@ export default function App() {
     if (messageData.type === 'cloudflare-session' && messageData.session?.access_token) {
       const nativeSession = { access_token: messageData.session.access_token, user: messageData.user || null };
       nativeSessionRef.current = nativeSession;
+      let notificationError = null;
+      let locationError = null;
       try {
         await getLocationTask().setNativeAccessToken(nativeSession.access_token);
-        await registerNativePush(nativeSession.access_token);
-        if (nativeLocationActiveRef.current) await enableTracking(nativeSession.user?.id || 'signed-in-user', nativeSession.access_token);
+      } catch (error) {
+        locationError = error;
+      }
+      if (!locationError) {
+        try {
+          await registerNativePush(nativeSession.access_token);
+        } catch (error) {
+          notificationError = error;
+        }
+      }
+      if (!locationError && nativeLocationActiveRef.current) {
+        try {
+          await enableTracking(nativeSession.user?.id || 'signed-in-user', nativeSession.access_token);
+        } catch (error) {
+          locationError = error;
+        }
+      }
+      if (locationError) {
+        setPermissionIssue({ kind: 'location', code: locationError.code || 'location', text: locationError.message || 'Native location services could not be enabled.' });
+        setMessage(locationError.message || 'Native location services could not be enabled.');
+      } else if (notificationError) {
+        setPermissionIssue({ kind: 'notifications', code: notificationError.code || 'notifications', text: notificationError.message || 'Notifications could not be enabled.' });
+        setMessage(nativeLocationActiveRef.current ? 'Live location is active. Push notifications are temporarily unavailable.' : (notificationError.message || 'Push notifications are temporarily unavailable.'));
+      } else {
         setPermissionIssue(null);
         setMessage(nativeLocationActiveRef.current ? 'Notifications and live location are active.' : 'Notifications are active. Live location starts after employee sign-in.');
-      } catch (error) {
-        setPermissionIssue({ kind: error.code === 'notifications-permission' ? 'notifications' : 'setup', code: error.code || 'setup', text: error.message || 'Native services could not be enabled.' });
-        setMessage(error.message || 'Native services could not be enabled.');
       }
       return;
     }
