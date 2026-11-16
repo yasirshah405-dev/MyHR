@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "692115217400",
+    "project_id": "fruitmaster-employee",
+    "storage_bucket": "fruitmaster-employee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692115217400:android:b1c1eca6d117d0ee9d140d",
+        "android_client_info": {
+          "package_name": "com.fruitmaster.employee"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "692115217400-1bs9rvf9gof4iooaf4og1dp8hb54bm9g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQawV_K7bpyhvGPB1hA5EK6RaJ4SBvFHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "692115217400-1bs9rvf9gof4iooaf4og1dp8hb54bm9g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692115217400:android:dcd0f6c997e401679d140d",
+        "android_client_info": {
+          "package_name": "com.fruitmaster.employee.v2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "692115217400-1bs9rvf9gof4iooaf4og1dp8hb54bm9g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQawV_K7bpyhvGPB1hA5EK6RaJ4SBvFHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "692115217400-1bs9rvf9gof4iooaf4og1dp8hb54bm9g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

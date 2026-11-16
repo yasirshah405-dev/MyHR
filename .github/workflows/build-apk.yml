@@ -60,7 +60,16 @@ jobs:
             # a valid Firebase configuration file.
             printf '%s' "$GOOGLE_SERVICES_JSON_B64" | tr -d '\r\n \t' | base64 --decode > android/app/google-services.json
             test -s android/app/google-services.json
+          elif [ ! -s android/app/google-services.json ]; then
+            echo "::error::Firebase Android configuration is required for native push notifications"
+            exit 1
           fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync('android/app/google-services.json', 'utf8'));
+          const hasV2 = (config.client || []).some((client) => client?.client_info?.android_client_info?.package_name === 'com.fruitmaster.employee.v2');
+          if (!hasV2) { console.error('::error::google-services.json has no com.fruitmaster.employee.v2 client'); process.exit(1); }
+          NODE
 
       - name: Sync Android version from app.json
         shell: bash
