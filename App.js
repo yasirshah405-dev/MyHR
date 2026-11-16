@@ -10,7 +10,7 @@ const backendUrl = employeeAppUrl.split('/?')[0].replace(/\/$/, '');
 const CLOUDFLARE_MODE = String(process.env.EXPO_PUBLIC_BACKEND_MODE || '').toLowerCase() === 'cloudflare' || /workers\.dev/i.test(employeeAppUrl);
 const LOCATION_CHANNEL_ID = 'com.fruitmaster.employee:fruitmaster-background-location-v2';
 const APP_VERSION = '1.0.44';
-const APK_URL = 'https://github.com/yasirshah405-dev/MyHR/releases/latest/download/my-hr.apk';
+const APK_URL = 'https://raw.githubusercontent.com/yasirshah405-dev/MyHR/main/my-hr.apk';
 
 // Load optional native modules only after the WebView has rendered. This keeps
 // a stale/partially installed native module from crashing the app at launch;
