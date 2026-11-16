@@ -219,6 +219,11 @@ export default function App() {
     if (webViewLoadingTimerRef.current) clearTimeout(webViewLoadingTimerRef.current);
     webViewLoadingTimerRef.current = null;
     setLoading(false);
+    // Retry native push registration after the WebView is recreated. The
+    // bridge is a no-op until an employee is signed in.
+    if (CLOUDFLARE_MODE && webViewRef.current) {
+      webViewRef.current.injectJavaScript('window.HRMSSyncNativeSession && window.HRMSSyncNativeSession(); true;');
+    }
   }, []);
 
   const handleWebViewError = useCallback(() => {
@@ -510,6 +515,10 @@ export default function App() {
       if (state === 'active') {
         checkForUpdate();
         restoreNativeServices();
+        // Retry after Android resumes from a transient FCM/Expo failure.
+        if (CLOUDFLARE_MODE && webViewRef.current) {
+          webViewRef.current.injectJavaScript('window.HRMSSyncNativeSession && window.HRMSSyncNativeSession(); true;');
+        }
       }
     });
     const backSubscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -559,7 +568,7 @@ export default function App() {
     />
     {loading && <View style={styles.loadingOverlay}><LoadingScreen /></View>}
     {updateInfo && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>Update required</Text><Text style={styles.noticeBody}>{updateInfo.message || `Install version ${updateInfo.latestVersion} to continue using My HR.`}</Text><View style={styles.noticeActions}><Text onPress={() => Linking.openURL(updateInfo.apkUrl || APK_URL)} style={styles.noticePrimary}>Update now</Text></View></View></View>}
-    {permissionIssue && permissionIssue.kind !== 'notifications' && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>Live location needs permission</Text><Text style={styles.noticeBody}>{permissionIssue.text}</Text><View style={styles.noticeActions}><Text onPress={openPhoneSettings} style={styles.noticePrimary}>Open phone settings</Text><Text onPress={retryNativeSetup} style={styles.noticeSecondary}>Retry</Text></View></View></View>}
+    {permissionIssue && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>{permissionIssue.kind === 'notifications' ? 'Notifications need permission' : 'Live location needs permission'}</Text><Text style={styles.noticeBody}>{permissionIssue.text}</Text><View style={styles.noticeActions}><Text onPress={openPhoneSettings} style={styles.noticePrimary}>Open phone settings</Text><Text onPress={retryNativeSetup} style={styles.noticeSecondary}>Retry</Text></View></View></View>}
     
     </SafeAreaView>
   </SafeAreaProvider>;

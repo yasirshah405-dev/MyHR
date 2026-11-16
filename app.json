@@ -2,7 +2,7 @@
   "expo": {
     "name": "My HR",
     "slug": "fruitmaster-employee",
-    "version": "1.0.44",
+    "version": "1.0.45",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
