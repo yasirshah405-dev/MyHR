@@ -9,7 +9,7 @@ const employeeAppUrl = process.env.EXPO_PUBLIC_EMPLOYEE_APP_URL || 'https://myhr
 const backendUrl = employeeAppUrl.split('/?')[0].replace(/\/$/, '');
 const CLOUDFLARE_MODE = String(process.env.EXPO_PUBLIC_BACKEND_MODE || '').toLowerCase() === 'cloudflare' || /workers\.dev/i.test(employeeAppUrl);
 const LOCATION_CHANNEL_ID = 'com.fruitmaster.employee:fruitmaster-background-location-v2';
-const APP_VERSION = '1.0.47';
+const APP_VERSION = '1.0.48';
 const APK_URL = 'https://raw.githubusercontent.com/yasirshah405-dev/MyHR/main/my-hr.apk';
 // The employee is sampled once per hour while attendance is active. The
 // immediate check-in reading is still sent so the employer sees a first point
