@@ -27,6 +27,7 @@ let SharingModule;
 let LocationTaskModule;
 let ApplicationModule;
 let notificationPermissionRequest;
+const NOTIFICATION_TOKEN_RETRY_DELAYS_MS = [1500, 3000, 6000, 10000];
 function getLocation() { return LocationModule || (LocationModule = require('expo-location')); }
 function getNotifications() { return NotificationsModule || (NotificationsModule = require('expo-notifications')); }
 function getDevice() { return DeviceModule || (DeviceModule = require('expo-device')); }
@@ -82,18 +83,29 @@ async function registerNativePush(accessToken) {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
   if (!projectId) throw new Error('The native notification project is not configured yet.');
   let tokenResult;
-  try {
-    tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
-  } catch (error) {
-    const tokenError = String(error && error.message || error);
-    if (/SERVICE_NOT_AVAILABLE/i.test(tokenError)) {
-      throw permissionError('Push notification service is temporarily unavailable. Live location can continue; please retry notifications later.', 'notifications-service-unavailable');
+  let lastError;
+  for (let attempt = 0; attempt <= NOTIFICATION_TOKEN_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      const tokenError = String(error && error.message || error);
+      const transientFirebaseFailure = /SERVICE_NOT_AVAILABLE|FirebaseInstallations|Internal error/i.test(tokenError);
+      if (!transientFirebaseFailure || attempt >= NOTIFICATION_TOKEN_RETRY_DELAYS_MS.length) {
+        if (/SERVICE_NOT_AVAILABLE|FirebaseInstallations|Internal error/i.test(tokenError)) {
+          throw permissionError('Google Play Services could not create a notification token. Update Google Play Services, enable internet and background data, then tap Retry.', 'notifications-service-unavailable');
+        }
+        if (/FirebaseApp|FCM|google-services/i.test(tokenError)) {
+          throw permissionError('Android push notifications are not configured in this build. HR must add the Firebase Android configuration and rebuild the app.', 'firebase-config');
+        }
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, NOTIFICATION_TOKEN_RETRY_DELAYS_MS[attempt]));
     }
-    if (/FirebaseApp|FCM|google-services/i.test(tokenError)) {
-      throw permissionError('Android push notifications are not configured in this build. HR must add the Firebase Android configuration and rebuild the app.', 'firebase-config');
-    }
-    throw error;
   }
+  if (lastError || !tokenResult) throw lastError || new Error('Could not create a native notification token.');
   const token = tokenResult && tokenResult.data;
   if (!token) throw new Error('Could not create a native notification token.');
   const response = await fetch(`${backendUrl}/api/native-push-register`, {
@@ -543,6 +555,11 @@ export default function App() {
   }, [checkForUpdate, restoreNativeServices, updateInfo]);
 
   const openPhoneSettings = useCallback(() => { Linking.openSettings().catch(() => {}); }, []);
+  const openGooglePlayServices = useCallback(() => {
+    Linking.openURL('market://details?id=com.google.android.gms')
+      .catch(() => Linking.openURL('https://play.google.com/store/apps/details?id=com.google.android.gms'))
+      .catch(() => openPhoneSettings());
+  }, [openPhoneSettings]);
 
   return <SafeAreaProvider>
     <StatusBar barStyle="light-content" backgroundColor="#032e42" translucent={false} />
@@ -573,7 +590,7 @@ export default function App() {
     />
     {loading && <View style={styles.loadingOverlay}><LoadingScreen /></View>}
     {updateInfo && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>Update required</Text><Text style={styles.noticeBody}>{updateInfo.message || `Install version ${updateInfo.latestVersion} to continue using My HR.`}</Text><View style={styles.noticeActions}><Text onPress={() => Linking.openURL(updateInfo.apkUrl || APK_URL)} style={styles.noticePrimary}>Update now</Text></View></View></View>}
-    {permissionIssue && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>{permissionIssue.kind === 'notifications' ? 'Notifications need permission' : 'Live location needs permission'}</Text><Text style={styles.noticeBody}>{permissionIssue.text}</Text><View style={styles.noticeActions}><Text onPress={openPhoneSettings} style={styles.noticePrimary}>Open phone settings</Text><Text onPress={retryNativeSetup} style={styles.noticeSecondary}>Retry</Text></View></View></View>}
+    {permissionIssue && <View style={styles.noticeOverlay}><View style={styles.noticeCard}><Text style={styles.noticeTitle}>{permissionIssue.kind === 'notifications' ? (permissionIssue.code === 'notifications-service-unavailable' ? 'Google Play Services unavailable' : 'Notifications need permission') : 'Live location needs permission'}</Text><Text style={styles.noticeBody}>{permissionIssue.text}</Text><View style={styles.noticeActions}><Text onPress={permissionIssue.code === 'notifications-service-unavailable' ? openGooglePlayServices : openPhoneSettings} style={styles.noticePrimary}>{permissionIssue.code === 'notifications-service-unavailable' ? 'Update Google Play' : 'Open phone settings'}</Text><Text onPress={retryNativeSetup} style={styles.noticeSecondary}>Retry</Text></View></View></View>}
     
     </SafeAreaView>
   </SafeAreaProvider>;
