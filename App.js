@@ -9,8 +9,12 @@ const employeeAppUrl = process.env.EXPO_PUBLIC_EMPLOYEE_APP_URL || 'https://myhr
 const backendUrl = employeeAppUrl.split('/?')[0].replace(/\/$/, '');
 const CLOUDFLARE_MODE = String(process.env.EXPO_PUBLIC_BACKEND_MODE || '').toLowerCase() === 'cloudflare' || /workers\.dev/i.test(employeeAppUrl);
 const LOCATION_CHANNEL_ID = 'com.fruitmaster.employee:fruitmaster-background-location-v2';
-const APP_VERSION = '1.0.44';
+const APP_VERSION = '1.0.47';
 const APK_URL = 'https://raw.githubusercontent.com/yasirshah405-dev/MyHR/main/my-hr.apk';
+// The employee is sampled once per hour while attendance is active. The
+// immediate check-in reading is still sent so the employer sees a first point
+// without waiting for the first background callback.
+const LOCATION_INTERVAL_MS = 60 * 60 * 1000;
 
 // Load optional native modules only after the WebView has rendered. This keeps
 // a stale/partially installed native module from crashing the app at launch;
@@ -157,21 +161,22 @@ async function startBackgroundTracking(accessToken) {
     });
   }
   const running = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-  if (!running) {
-    await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 60000,
-      distanceInterval: 50,
-      pausesUpdatesAutomatically: false,
-      showsBackgroundLocationIndicator: true,
-      activityType: Location.ActivityType.AutomotiveNavigation,
-      foregroundService: {
-        notificationTitle: ' ',
-        notificationBody: ' ',
-        notificationColor: '#f28a00'
-      }
-    });
-  }
+  // Restart an already-running task so an upgraded APK cannot keep the old
+  // minute/distance schedule from a previous build.
+  if (running) await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => {});
+  await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+    accuracy: Location.Accuracy.Balanced,
+    timeInterval: LOCATION_INTERVAL_MS,
+    distanceInterval: 0,
+    pausesUpdatesAutomatically: false,
+    showsBackgroundLocationIndicator: true,
+    activityType: Location.ActivityType.AutomotiveNavigation,
+    foregroundService: {
+      notificationTitle: ' ',
+      notificationBody: ' ',
+      notificationColor: '#f28a00'
+    }
+  });
   // Do not wait for Android's first time/distance callback. Send a reading
   // immediately so the employer can verify the employee link and see a
   // location as soon as tracking is enabled.
@@ -261,11 +266,11 @@ export default function App() {
           await stopBackgroundTracking();
           setTracking(false);
           setPermissionIssue(null);
-          setMessage('Live location is active continuously while you are signed in.');
+          setMessage('Hourly location tracking is active while you are checked in.');
           return;
         }
         setPermissionIssue(null);
-        setMessage('Live location is active and the latest location was sent to your employer.');
+        setMessage('Hourly location tracking is active; the latest location was sent to your employer.');
       } catch (error) {
         setMessage(error.message || 'Live location could not be saved for your employer.');
       }
@@ -279,7 +284,7 @@ export default function App() {
         trackingStartedFor.current = '';
         setTracking(false);
         setPermissionIssue(null);
-        setMessage('Live location is active continuously while you are signed in.');
+        setMessage('Hourly location tracking is active while you are checked in.');
         return;
       }
       setTracking(true);
@@ -287,7 +292,7 @@ export default function App() {
         setMessage(result.immediatePingError.message || 'Live location could not be saved for your employer.');
       } else {
         setPermissionIssue(null);
-        setMessage('Live location is active and the latest location was sent to your employer.');
+        setMessage('Hourly location tracking is active; the latest location was sent to your employer.');
       }
     } catch (error) {
       trackingStartedFor.current = '';

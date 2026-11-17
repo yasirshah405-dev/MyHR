@@ -2,7 +2,7 @@
   "expo": {
     "name": "My HR",
     "slug": "fruitmaster-employee",
-    "version": "1.0.46",
+    "version": "1.0.47",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -43,7 +43,7 @@
         "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#4c1d95"
       },
-      "versionCode": 45
+      "versionCode": 46
     },
     "androidStatusBar": {
       "barStyle": "light-content",

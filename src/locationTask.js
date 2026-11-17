@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 export const LOCATION_TASK_NAME = 'fruitmaster-background-location';
+export const LOCATION_INTERVAL_MS = 60 * 60 * 1000;
 const employeeAppUrl = process.env.EXPO_PUBLIC_EMPLOYEE_APP_URL || 'https://myhr-cloudflare-rebuild.fruitmaster-myhr.workers.dev/?native=1';
 const backendUrl = employeeAppUrl.split('/?')[0].replace(/\/$/, '');
 const CLOUDFLARE_MODE = String(process.env.EXPO_PUBLIC_BACKEND_MODE || '').toLowerCase() === 'cloudflare' || /workers\.dev/i.test(employeeAppUrl);
@@ -123,6 +124,7 @@ export async function sendCurrentLocationPing(accessToken) {
       latitude: coords.latitude,
       longitude: coords.longitude,
       accuracy: Number.isFinite(coords.accuracy) ? Math.min(500, Math.max(0, coords.accuracy)) : 500,
+      capturedAt: Number.isFinite(position.timestamp) ? new Date(position.timestamp).toISOString() : new Date().toISOString(),
       source: 'managed-mobile'
     };
     const sent = await sendPing(payload, accessToken);
@@ -171,12 +173,17 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     return;
   }
   const queued = await readPending();
-  const current = locations.map((location) => location && location.coords).filter(Boolean).map((coords) => ({
-    latitude: coords.latitude,
-    longitude: coords.longitude,
-    accuracy: Number.isFinite(coords.accuracy) ? Math.min(500, Math.max(0, coords.accuracy)) : 500,
-    source: 'managed-mobile'
-  }));
+  const current = locations.filter(Boolean).map((location) => {
+    const coords = location && location.coords;
+    if (!coords) return null;
+    return {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      accuracy: Number.isFinite(coords.accuracy) ? Math.min(500, Math.max(0, coords.accuracy)) : 500,
+      capturedAt: Number.isFinite(location.timestamp) ? new Date(location.timestamp).toISOString() : new Date().toISOString(),
+      source: 'managed-mobile'
+    };
+  }).filter(Boolean);
   const pending = [...queued, ...current].filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
   const remaining = [];
   for (const payload of pending.slice(-24)) {

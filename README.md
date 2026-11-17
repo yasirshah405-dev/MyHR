@@ -2,7 +2,7 @@
 
 This is the single employee app. It displays the same deployed Employee App interface inside the native shell and keeps the native location task running in the background. The default build points to the Cloudflare Worker deployment. After an employee signs in to the embedded Employee App, its Cloudflare access token is shared with the native tracker, which writes GPS pings through `/api/native-location-ping`.
 
-The native shell also registers an Expo push token after login. Attendance reminders and employer-sent reminders are delivered through the native Android notification service, so they can arrive while the app is in the background or has been closed normally. Android will not deliver any app notification after the user force-stops the app; reopening it is required by Android in that state. If Android does not show the background-location prompt, use the app's **Open phone settings** button and set Location to **Allow all the time**.
+The native shell also registers an Expo push token after login. Attendance reminders and employer-sent reminders are delivered through the native Android notification service, so they can arrive while the app is in the background or has been closed normally. Android will not deliver any app notification after the user force-stops the app; reopening it is required by Android in that state. If Android does not show the background-location prompt, use the app's **Open phone settings** button and set Location to **Allow all the time**. While an employee is checked in, the location task records one point at check-in and approximately one point per hour; it stops after checkout.
 
 ## One-time notification database setup
 
